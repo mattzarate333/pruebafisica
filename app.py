@@ -6,12 +6,6 @@ import io
 st.set_page_config(page_title="Valoración Física", layout="wide")
 
 archivo = "datos_estudiantes.xlsx"
-
-# --- NUEVO: ESTO DEBE IR AQUÍ ARRIBA ---
-if st.sidebar.button("⚠️ REINICIAR TODA LA BASE DE DATOS"):
-    if os.path.exists(archivo):
-        os.remove(archivo)
-    st.rerun()
 # ----------------------------
 # PRUEBAS
 # ----------------------------
