@@ -19,8 +19,8 @@ pruebas_nombres = [
 
 if not os.path.exists(archivo):
     columnas = [
-        "Nombre","Apellidos","Sexo","Fecha Nac","Edad","Direccion",
-        "Deportes","Identidad","Curso","Año",
+        "Nombre","Apellidos","Sexo","Edad",
+        "Deportes","Identidad","Curso",
         "Talla","Peso","Envergadura","IMC"
     ]
 
@@ -46,15 +46,12 @@ with st.form("formulario"):
         nombre = st.text_input("Nombre")
         apellidos = st.text_input("Apellidos")
         sexo = st.selectbox("Sexo", ["H", "M"])
-        fecha = st.date_input("Fecha de nacimiento")
         edad = st.number_input("Edad", 10, 30)
 
     with col2:
-        direccion = st.text_input("Dirección")
         deportes = st.text_input("Deportes")
         identidad = st.text_input("Tarjeta de identidad")
         curso = st.text_input("Curso")
-        año = st.number_input("Año", 2020, 2030)
 
     st.subheader("Medidas")
     talla = st.number_input("Talla (m)", min_value=0.0)
@@ -88,9 +85,9 @@ if enviar:
     # NUEVA FILA
     nueva_fila = {
         "Nombre":nombre,"Apellidos":apellidos,"Sexo":sexo,
-        "Fecha Nac":fecha,"Edad":edad,"Direccion":direccion,
+        "Edad":edad,
         "Deportes":deportes,"Identidad":identidad,
-        "Curso":curso,"Año":año,
+        "Curso":curso,
         "Talla":talla,"Peso":peso,"Envergadura":envergadura,"IMC":imc
     }
 
@@ -153,7 +150,34 @@ if enviar:
         file_name="datos_estudiantes.xlsx",
         mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
     )
+df = pd.read_excel(archivo)
 
+# ----------------------------
+# 🧹 LIMPIAR COLUMNAS VIEJAS
+# ----------------------------
+columnas_correctas = [
+    "Nombre","Apellidos","Sexo","Edad",
+    "Deportes","Identidad","Curso",
+    "Talla","Peso","Envergadura","IMC"
+]
+
+for p in pruebas_nombres:
+    columnas_correctas.append(f"{p}_Marca")
+    columnas_correctas.append(f"{p}_Nota")
+
+columnas_correctas.append("Nota Media")
+columnas_correctas.append("Lesiones")
+
+# Eliminar columnas que ya no existen en el formulario
+df = df[[col for col in df.columns if col in columnas_correctas]]
+
+# Agregar columnas faltantes (por si acaso)
+for col in columnas_correctas:
+    if col not in df.columns:
+        df[col] = 0
+
+# Reordenar columnas
+df = df[columnas_correctas]
 # ----------------------------
 # MOSTRAR DATOS
 # ----------------------------
