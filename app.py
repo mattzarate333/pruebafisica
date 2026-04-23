@@ -7,6 +7,12 @@ st.set_page_config(page_title="Valoración Física", layout="wide")
 
 archivo = "datos_estudiantes.xlsx"
 
+# --- NUEVO: ESTO DEBE IR AQUÍ ARRIBA ---
+if st.sidebar.button("⚠️ REINICIAR TODA LA BASE DE DATOS"):
+    if os.path.exists(archivo):
+        os.remove(archivo)
+    st.rerun()
+
 # ----------------------------
 # PRUEBAS
 # ----------------------------
@@ -179,10 +185,4 @@ if enviar:
 # ----------------------------
 st.subheader("📊 Base de datos")
 st.dataframe(df)
-
-if st.button("🔴 Borrar todos los datos y reiniciar"):
-    if os.path.exists(archivo):
-        os.remove(archivo)
-        st.success("Base de datos eliminada. Reiniciando...")
-        st.rerun()
 
