@@ -119,3 +119,15 @@ if enviar:
     df.to_excel(archivo, index=False)
 
     st.success("Datos guardados correctamente")
+
+import io
+
+buffer = io.BytesIO()
+df.to_excel(buffer, index=False)
+
+st.download_button(
+    label="Descargar Excel",
+    data=buffer,
+    file_name="datos_estudiantes.xlsx",
+    mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+)
