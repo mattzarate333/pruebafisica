@@ -179,3 +179,10 @@ if enviar:
 # ----------------------------
 st.subheader("📊 Base de datos")
 st.dataframe(df)
+
+if st.button("🔴 Borrar todos los datos y reiniciar"):
+    if os.path.exists(archivo):
+        os.remove(archivo)
+        st.success("Base de datos eliminada. Reiniciando...")
+        st.rerun()
+
