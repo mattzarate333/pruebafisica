@@ -8,7 +8,7 @@ st.set_page_config(page_title="Valoración Física", layout="wide")
 archivo = "datos_estudiantes.xlsx"
 
 # ----------------------------
-# CREAR ARCHIVO SI NO EXISTE
+# PRUEBAS
 # ----------------------------
 pruebas_nombres = [
     "Cooper","Ruffer","Burpee","Course",
@@ -17,22 +17,42 @@ pruebas_nombres = [
     "Fz Balon","Coordinacion","Velocidad","Agilidad"
 ]
 
-if not os.path.exists(archivo):
-    columnas = [
-        "Nombre","Apellidos","Sexo","Edad",
-        "Deportes","Identidad","Curso",
-        "Talla","Peso","Envergadura","IMC"
-    ]
+# ----------------------------
+# COLUMNAS BASE
+# ----------------------------
+columnas_base = [
+    "Nombre","Apellidos","Sexo","Edad",
+    "Deportes","Identidad","Curso",
+    "Talla","Peso","Envergadura","IMC"
+]
 
-    for p in pruebas_nombres:
-        columnas.append(f"{p}_Marca")
-        columnas.append(f"{p}_Nota")
+columnas_correctas = columnas_base.copy()
 
-    columnas.append("Nota Media")
-    columnas.append("Lesiones")
+for p in pruebas_nombres:
+    columnas_correctas.append(f"{p}_Marca")
+    columnas_correctas.append(f"{p}_Nota")
 
-    df = pd.DataFrame(columns=columnas)
-    df.to_excel(archivo, index=False)
+columnas_correctas.append("Nota Media")
+columnas_correctas.append("Lesiones")
+
+# ----------------------------
+# CREAR / CARGAR ARCHIVO
+# ----------------------------
+if os.path.exists(archivo):
+    df = pd.read_excel(archivo)
+
+    # LIMPIAR columnas viejas
+    df = df[[col for col in df.columns if col in columnas_correctas]]
+
+    # AGREGAR columnas faltantes
+    for col in columnas_correctas:
+        if col not in df.columns:
+            df[col] = 0
+
+    df = df[columnas_correctas]
+
+else:
+    df = pd.DataFrame(columns=columnas_correctas)
 
 # ----------------------------
 # FORMULARIO
@@ -71,24 +91,19 @@ with st.form("formulario"):
     enviar = st.form_submit_button("Guardar")
 
 # ----------------------------
-# PROCESO PRINCIPAL
+# PROCESO
 # ----------------------------
 if enviar:
 
-    # VALIDACIÓN BÁSICA
     if nombre == "" or apellidos == "":
         st.error("Nombre y Apellidos son obligatorios")
         st.stop()
 
-    df = pd.read_excel(archivo)
-
-    # NUEVA FILA
     nueva_fila = {
         "Nombre":nombre,"Apellidos":apellidos,"Sexo":sexo,
-        "Edad":edad,
-        "Deportes":deportes,"Identidad":identidad,
-        "Curso":curso,
-        "Talla":talla,"Peso":peso,"Envergadura":envergadura,"IMC":imc
+        "Edad":edad,"Deportes":deportes,"Identidad":identidad,
+        "Curso":curso,"Talla":talla,"Peso":peso,
+        "Envergadura":envergadura,"IMC":imc
     }
 
     for p in pruebas_nombres:
@@ -100,16 +115,12 @@ if enviar:
 
     df = pd.concat([df, pd.DataFrame([nueva_fila])], ignore_index=True)
 
-    # ----------------------------
-    # LIMPIEZA DE DATOS
-    # ----------------------------
+    # LIMPIEZA
     for p in pruebas_nombres:
         df[f"{p}_Marca"] = pd.to_numeric(df[f"{p}_Marca"], errors="coerce")
         df[f"{p}_Nota"] = df[f"{p}_Nota"].astype(float)
 
-    # ----------------------------
     # CALCULAR NOTAS
-    # ----------------------------
     pruebas_menor_mejor = ["Velocidad","Agilidad","Coordinacion","Ruffer"]
 
     for sexo_grupo in ["H", "M"]:
@@ -133,57 +144,38 @@ if enviar:
     notas_cols = [f"{p}_Nota" for p in pruebas_nombres]
     df["Nota Media"] = df[notas_cols].mean(axis=1).round(2)
 
-    # GUARDAR
-    df.to_excel(archivo, index=False)
+    # RANKING GENERAL
+    df["Ranking"] = df["Nota Media"].rank(ascending=False)
+
+    # ----------------------------
+    # GUARDAR EN 3 HOJAS
+    # ----------------------------
+    with pd.ExcelWriter(archivo, engine="openpyxl") as writer:
+        df.to_excel(writer, sheet_name="Todos", index=False)
+        df[df["Sexo"] == "H"].to_excel(writer, sheet_name="Hombres", index=False)
+        df[df["Sexo"] == "M"].to_excel(writer, sheet_name="Mujeres", index=False)
 
     st.success("✅ Datos guardados correctamente")
 
     # ----------------------------
-    # DESCARGAR EXCEL
+    # DESCARGAR
     # ----------------------------
     buffer = io.BytesIO()
-    df.to_excel(buffer, index=False)
+
+    with pd.ExcelWriter(buffer, engine="openpyxl") as writer:
+        df.to_excel(writer, sheet_name="Todos", index=False)
+        df[df["Sexo"] == "H"].to_excel(writer, sheet_name="Hombres", index=False)
+        df[df["Sexo"] == "M"].to_excel(writer, sheet_name="Mujeres", index=False)
 
     st.download_button(
-        label="📥 Descargar Excel",
+        label="📥 Descargar Excel completo",
         data=buffer,
-        file_name="datos_estudiantes.xlsx",
+        file_name="valoracion_fisica.xlsx",
         mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
     )
-df = pd.read_excel(archivo)
 
-# ----------------------------
-# 🧹 LIMPIAR COLUMNAS VIEJAS
-# ----------------------------
-columnas_correctas = [
-    "Nombre","Apellidos","Sexo","Edad",
-    "Deportes","Identidad","Curso",
-    "Talla","Peso","Envergadura","IMC"
-]
-
-for p in pruebas_nombres:
-    columnas_correctas.append(f"{p}_Marca")
-    columnas_correctas.append(f"{p}_Nota")
-
-columnas_correctas.append("Nota Media")
-columnas_correctas.append("Lesiones")
-
-# Eliminar columnas que ya no existen en el formulario
-df = df[[col for col in df.columns if col in columnas_correctas]]
-
-# Agregar columnas faltantes (por si acaso)
-for col in columnas_correctas:
-    if col not in df.columns:
-        df[col] = 0
-
-# Reordenar columnas
-df = df[columnas_correctas]
 # ----------------------------
 # MOSTRAR DATOS
 # ----------------------------
-try:
-    df = pd.read_excel(archivo)
-    st.subheader("📊 Base de datos")
-    st.dataframe(df)
-except:
-    pass
+st.subheader("📊 Base de datos")
+st.dataframe(df)
